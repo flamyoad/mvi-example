@@ -21,9 +21,7 @@ class MealService(
                 val categories = mapper.fromList(apiResult.value.categories)
                 Result.Success(categories)
             }
-            is Result.Failure -> {
-                Result.Failure(apiResult.error)
-            }
+            is Result.Failure -> apiResult
         }
     }
 }
