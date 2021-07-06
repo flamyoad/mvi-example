@@ -13,15 +13,9 @@ class MealService(
 ) {
 
     suspend fun getMeals(): Result<List<MealCategory>> {
-        val apiResult = networkRequestManager.apiRequest {
-            api.getMealCategories()
-        }
-        return when (apiResult) {
-            is Result.Success -> {
-                val categories = mapper.fromList(apiResult.value.categories)
-                Result.Success(categories)
-            }
-            is Result.Failure -> apiResult
-        }
+        return networkRequestManager.apiRequestWithMapping(
+            apiCall = { api.getMealCategories() },
+            mapTransform = { mapper.fromList(it.categories) }
+        )
     }
 }

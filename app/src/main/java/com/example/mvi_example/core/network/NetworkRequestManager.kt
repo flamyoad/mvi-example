@@ -3,14 +3,14 @@ package com.example.mvi_example.core.network
 import com.example.mvi_example.api.MoshiSingleton
 import com.example.mvi_example.core.state.Result
 import com.example.mvi_example.utils.guard
-import okhttp3.ResponseBody
 import retrofit2.Response
 import com.example.mvi_example.core.network.AppError.Code
 import com.squareup.moshi.JsonDataException
+import okhttp3.ResponseBody
 
 class NetworkRequestManager {
 
-    suspend inline fun <reified T> apiRequest(apiCall: () -> Response<T>): Result<T> {
+    suspend inline fun <reified T> apiRequest(crossinline apiCall: suspend () -> Response<T>): Result<T> {
         return try {
             val response = apiCall.invoke()
             if (response.isSuccessful) {
@@ -29,13 +29,32 @@ class NetworkRequestManager {
                         Result.Failure(error)
                     }
                 }
-
                 return Result.Success(body)
             } else {
                 handleFailureInResponse(response)
             }
         } catch (exception: Exception) {
             handleFailureInRequest(exception)
+        }
+    }
+
+    suspend inline fun <reified T, reified R> apiRequestWithMapping(
+        crossinline apiCall: suspend () -> Response<T>,
+        crossinline mapTransform: (T) -> R )
+    : Result<R> {
+        try {
+            val response = apiCall.invoke()
+            if (response.isSuccessful) {
+                val body = response.body().guard {
+                    return Result.Success(Any() as R)
+                }
+                val transformedBody = mapTransform(body)
+                return Result.Success(transformedBody)
+            } else {
+                return handleFailureInResponse(response) as Result<R>
+            }
+        } catch (e: Exception) {
+            return handleFailureInRequest(e)
         }
     }
 
